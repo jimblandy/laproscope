@@ -58,3 +58,10 @@ file in the _extensions_ subdirectory of my Firefox profile with a symlink
 to my source tree, so that simply restarting Firefox reloaded the current
 sources. There's almost certainly a better way, but I don't know what it
 is.
+
+Spelling
+--------
+
+The word "Laproscope" is more commonly spelt "Laparoscope". That this
+extension should use (what one might charitably call) a non-standard
+spelling is fitting, and there are no plans to change the name.
