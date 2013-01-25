@@ -3,36 +3,52 @@
 (function () {
 
    function handler(aConnection) {
-     this.write('laproscope> ');
+     aConnection.write('surely there are better alternatives\n');
+     aConnection.write('l> ');
      aConnection.onInput = onInput;
 
      let buffer = "";
      function onInput(string) {
        buffer += string;
        let end;
-       while ((end = buffer.indexOf('\n', start)) > 0) {
+       while ((end = buffer.indexOf('\n')) > 0) {
          try {
-           this.write(uneval(eval(buffer.substr(start, end + 1))) + '\n');
+           /*
+            * (0,eval) is an indirect eval, and thus evaluates the code
+            * directly in the global object.
+            */
+           let value = (0,eval)(buffer.substr(0, end + 1));
+           /*
+            * Print the value helpfully. Don't print 'undefined' values;
+            * show source form of everything; show string for objects (so
+            * we can see their class, usually).
+            */
+           if (value !== undefined) {
+             this.write(uneval(value) + '\n');
+             if (typeof value === 'object') {
+               this.write(value.toString() + '\n');
+             }
+           }
          } catch (x) {
-           this.write('Exception: ' + x + '\n');
+           if (x instanceof Error) {
+             this.write('Exception: ' + x + '\nStack:\n' + x.stack);
+           } else {
+             this.write('Exception: ' + uneval(x) + '\n');
+           }
          }
          buffer = buffer.substr(end + 1);
        }
-       this.write('laproscope> ');
+       this.write('l> ');
      }
    }
 
-   Laproscope.log("Laproscope.BrowserOverlay: creating server");
    let server = new Laproscope.Server(17428, true, handler);
-   Laproscope.log("Laproscope.BrowserOverlay: server created");
 
    Laproscope.BrowserOverlay = {
      enable: function(aEvent) {
-       Laproscope.log("Laproscope.BrowserOverlay.enable(" + uneval(aEvent) + ")");
-       Laproscope.log("Checked: " + aEvent.target.hasAttribute('checked'));
-       Laproscope.log("Laproscope.BrowserOverlay.enable: setting server.enabled");
-       server.enabled = aEvent.target.hasAttribute('checked');
-       Laproscope.log("Laproscope.BrowserOverlay.enable: done setting server.enabled");
+       let value = aEvent.target.hasAttribute('checked');
+       Laproscope.log("Laproscope.BrowserOverlay.enable: " + uneval(value));
+       server.enabled = value;
      }
    };
  }
