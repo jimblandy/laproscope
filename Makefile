@@ -10,11 +10,8 @@ profile_dir := laproscope
 # The zip application to be used.
 ZIP := zip
 
-# The target location of the build and build files.
-bin_dir := bin
-
 # The target XPI file.
-xpi_file := $(bin_dir)/$(extension_name).xpi
+xpi_file := $(extension_name).xpi
 
 # The type of operating system this make command is running on.
 os_type := $(patsubst darwin%,darwin,$(shell echo $(OSTYPE)))
