@@ -33,6 +33,7 @@ For example:
     Connection.prototype.onDataAvailable@chrome://laproscope/content/server.js:110
     l>
 
+Now you can really hack on Firefox from within Emacs.
 
 Please note: when the _Laproscope server_ menu item is checked, any process
 on your machine can connect the port and do anything Firefox chrome code
