@@ -66,8 +66,8 @@
       * @param aInput   The data we have received from the connection; a string.
       */
      onInput: function(aInput) {
-       dump("Laproscope.Server.Connection received: " + uneval(aInput) + "\n");
-       dump("(onInput method not overridden)\n");
+       Laproscope.log("Laproscope.Server.Connection received: " + uneval(aInput));
+       Laproscope.log("(onInput method not overridden)");
      },
 
      /**
@@ -79,7 +79,7 @@
       *                         it completed successfully.
       */
      onClosed: function(aStatus) {
-       dump("Laproscope.Server.Connection closed: " + uneval(aStatus) + "\n");
+       Laproscope.log("Laproscope.Server.Connection closed: " + uneval(aStatus));
      },
 
      /* Internal methods. */
@@ -162,13 +162,13 @@
      },
 
      onSocketAccepted: function (aServ, aTransport) {
-       dump("Laproscope.Server: accepted connection: "
-            + aTransport.host + ":" + aTransport.port + "\n");
+       Laproscope.log("Laproscope.Server: accepted connection: "
+            + aTransport.host + ":" + aTransport.port);
        this._handler(new Connection(aTransport));
      },
 
      onStopListening: function (aServ, aStatus) {
-       dump("Laproscope.Server: stop listening: " + aStatus + "\n");
+       Laproscope.log("Laproscope.Server: stop listening: " + aStatus);
      }
    };
 
