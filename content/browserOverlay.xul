@@ -11,10 +11,6 @@
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
   <script type="application/x-javascript"
-    src="chrome://laproscope/content/prelude.js"/>
-  <script type="application/x-javascript"
-    src="chrome://laproscope/content/server.js" />
-  <script type="application/x-javascript"
     src="chrome://laproscope/content/browserOverlay.js" />
 
   <stringbundleset id="stringbundleset">
