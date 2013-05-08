@@ -6,12 +6,12 @@ var Laproscope = Laproscope || {};
    Components.utils.import("chrome://laproscope/content/LaproscopeLog.jsm");
    Components.utils.import("chrome://laproscope/content/LaproscopeServer.jsm");
    Components.utils.import("chrome://laproscope/content/REPL.jsm");
-   let server = new LaproscopeServer.Listener(17428, true, REPL.handler);
+   let server = new LaproscopeServer.Listener(17428, true, REPL.handlerForGlobal(window));
 
    Laproscope.BrowserOverlay = {
      enable: function(aEvent) {
        let value = aEvent.target.hasAttribute('checked');
-       LaproscopeLog("Laproscope.BrowserOverlay.enable: " + uneval(value));
+       LaproscopeLog("Yo! Laproscope.BrowserOverlay.enable: " + uneval(value));
        server.enabled = value;
      }
    };

@@ -41,6 +41,7 @@ clean:
 xpi_built := install.rdf \
              chrome.manifest \
              $(wildcard content/*.js) \
+             $(wildcard content/*.jsm) \
              $(wildcard content/*.xul) \
              $(wildcard content/*.xml) \
              $(wildcard content/*.css) \
@@ -56,4 +57,5 @@ install: $(build_dir) $(xpi_built)
 	cp -Rf $(build_dir)/* $(profile_location)
 
 $(xpi_file): $(xpi_built)
-	$(ZIP) $(xpi_file) $(xpi_built)
+	$(ZIP) $(xpi_file).tmp $(xpi_built)
+	mv $(xpi_file).tmp $(xpi_file)

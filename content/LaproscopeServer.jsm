@@ -89,6 +89,7 @@ Connection.prototype = {
    */
   onClosed: function(aStatus) {
     LaproscopeLog("LaproscopeServer.Listener.Connection closed: " + uneval(aStatus));
+    this.close();
   },
 
   /* Internal methods. */

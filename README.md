@@ -54,11 +54,16 @@ part.
 Hacking
 -------
 
-I don't quite remember how I did it, but I managed to replace the _*.xpi_
-file in the _extensions_ subdirectory of my Firefox profile with a symlink
-to my source tree, so that simply restarting Firefox reloaded the current
-sources. There's almost certainly a better way, but I don't know what it
-is.
+If you're going to hack on Laproscope, you may find it convenient to have
+Firefox read Laproscope's sources straight from your working copy, instead
+of from the _.xpi_ file. Then, you can test your changes simply by
+re-starting Firefox, instead of re-building and re-installing the _.xpi_.
+
+To work this way, replace the _laproscope@red-bean.com.xpi_ file in the
+_extensions_ subdirectory of your profile directory with a file named
+_laproscope@red-bean.com_ (no _.xpi_ extension), whose contents are,
+simply, the path of your Laproscope working directory - the directory
+containing this _README.md_ file.
 
 Spelling
 --------
