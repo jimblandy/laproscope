@@ -27,6 +27,28 @@ var ScriptableInputStream = Components.Constructor("@mozilla.org/scriptableinput
  * Each time a client establishes a connection with a Listener, the server
  * creates an instance of this class and passes it to its handler.
  *
+ * A connection reports incoming data and stream closure to its 'listener'
+ * property, to which the handler function should assign an object with the
+ * following methods:
+ *
+ *    onInput(string)
+ *      We have received |string| on the TCP stream. The concatenation of
+ *      all strings ever passed to onInput is the entire text received on
+ *      the connection, but each onInput call could receive any arbitrary
+ *      fragment of text; for example, it may not be a complete line, even
+ *      if the sender sends complete lines.
+ *
+ *    onClosed(status)
+ *      The connection has been closed; status is the nsstatus value.
+ *
+ * A connection has the following methods:
+ *
+ *    write(string)
+ *      Send |string| on the TCP stream.
+ *
+ *    close()
+ *      Close the TCP stream.
+ *
  * Users should not call this directly; only the Listener class should
  * construct Connections.
  *
@@ -40,6 +62,19 @@ function Connection(aTransport) {
   this._input = ScriptableInputStream(input);
   this._output = output;
   this._outputQueue = "";
+
+  // Establish a default listener.
+  this.listener = {
+    onInput: (aInput) => {
+      LaproscopeLog("LaproscopeServer.Listener.Connection received: " + uneval(aInput));
+      LaproscopeLog("(listener not set)");
+    },
+
+    onClosed: (aStatus) => {
+      LaproscopeLog("LaproscopeServer.Listener.Connection closed: " + uneval(aStatus));
+      this.close();
+    }
+  };
 }
 
 Connection.prototype = {
@@ -66,32 +101,6 @@ Connection.prototype = {
     this._input.close();
   },
 
-  /**
-   * Called when we have received data on the connection.
-   *
-   * The Connection's user should override this method with their own
-   * handler.
-   *
-   * @param aInput   The data we have received from the connection; a string.
-   */
-  onInput: function(aInput) {
-    LaproscopeLog("LaproscopeServer.Listener.Connection received: " + uneval(aInput));
-    LaproscopeLog("(onInput method not overridden)");
-  },
-
-  /**
-   * Called when the client closes their end of the connection.
-   *
-   * The Connection's user should override this method with their own handler.
-   *
-   * @param aStatus          An nsresult explaining why it stopped; NS_OK if
-   *                         it completed successfully.
-   */
-  onClosed: function(aStatus) {
-    LaproscopeLog("LaproscopeServer.Listener.Connection closed: " + uneval(aStatus));
-    this.close();
-  },
-
   /* Internal methods. */
 
   _flush: function() {
@@ -113,10 +122,10 @@ Connection.prototype = {
   // Connection implements nsIStreamListener.
   onStartRequest: function(aRequest, aContext) {},
   onStopRequest: function(aRequest, aContext, aStatusCode) {
-    this.onClosed(aStatusCode);
+    this.listener.onClosed(aStatusCode);
   },
   onDataAvailable: function(aRequest, aContext, aStream, aOffset, aCount) {
-    this.onInput(this._input.readBytes(this._input.available()));
+    this.listener.onInput(this._input.readBytes(this._input.available()));
   }
 };
 

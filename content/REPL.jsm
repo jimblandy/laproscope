@@ -1,64 +1,14 @@
 var EXPORTED_SYMBOLS = ['REPL'];
 
-function handlerForGlobal(global) {
-  return handler;
-
-  function handler(aConnection) {
-    aConnection.write('surely there are better alternatives\n');
-    aConnection.write('l> ');
-
-    let unitParser = new UnitParser(onUnit, onUnitsClosed);
-    aConnection.onInput = unitParser.onInput.bind(unitParser);
-    aConnection.onClosed = unitParser.onClosed.bind(unitParser);
-
-    /* Utility object for the global. */
-    let lap = {
-      write: aConnection.write.bind(aConnection),
-    };
-
-    function evalAndPrint(code) {
-      try {
-        /* Reassign, in case other connections have set theirs. */
-        global.lap = lap;
-
-        let value = global.eval(code);
-        /*
-         * Print the value helpfully. Don't print 'undefined' values;
-         * show source form of everything; show string for objects (so
-         * we can see their class, usually).
-         */
-        if (value !== undefined) {
-          let ue = uneval(value);
-          /* Prefer toString to certain less-helpful results from uneval. */
-          if (ue === '({})' || ue.indexOf('\n') != -1) {
-            aConnection.write("(toString) " + value.toString() + "\n");
-          } else {
-            aConnection.write(ue + "\n");
-          }
-        }
-      } catch (x) {
-        aConnection.write('Exception: ' + x + '\n');
-        if (x.stack) {
-          aConnection.write('Stack:\n' + x.stack);
-        }
-      }
-    }
-
-    function onUnit(unit, isFinal) {
-      evalAndPrint(unit);
-      if (!isFinal) {
-        aConnection.write('l> ');
-      }
-    }
-    function onUnitsClosed(status) {
-      aConnection.constructor.prototype.onClosed.call(aConnection, status);
-    }
-  }
-}
-
-// Given data in arbitrary chunks from the socket, a UnitParser instance
-// parses them into units of code to be evaluated ("compilation units",
-// hence the name), and passes those units to its |onUnit| handler.
+// A Framer instance functions as a LaproscopeServer.Connection
+// listener, parses the stream into units of text to be evaluated
+// ("compilation units", hence the name), and passes them to its own
+// listener.
+//
+// A Framer also handles writing output to a connection so that textual
+// output, values, errors, stacks, and prompts can be reliably
+// distinguished. The output is still legible when using 'nc' to talk to
+// Laproscope.
 //
 // Our idiosyncratic definition of a unit:
 //
@@ -80,14 +30,27 @@ function handlerForGlobal(global) {
 //
 //      sed -e '$!s/^/\\ /' -e '$s/^/\\./'
 //
-// Instances have the following methods:
+// In the output, the first character of each line indicates what sort of
+// output it is, and the second character distinguishes continuations from
+// final lines. The first character of each line is one of the following:
 //
-// - onInput(string)
-// - onClosed(status)
-//    These are what you'd plug in to a Connection's onInput and onClosed
-//    hooks.
+//   =: A value printed as the result of evaluating a compilation unit.
+//   (space): Textual output written by the expression using 'lap.write'.
+//   !: An error message.
+//   .: A stack trace.
 //
-// Instances have the following handlers:
+// The second character of each line is either a space, indicating that
+// it's the final (or only) line of that item, or '-', indicating that
+// there are more lines to come in that item.
+//
+// As a special case, if the first three characters of a line are 'l> ',
+// that's a prompt. There's no following newline.
+//
+// All output, other than prompts, is complete lines.
+//
+// The listener object stored as the 'listener' property of a Framer
+// instance should have the following methods:
+//
 // - onUnit(unit, isFinal)
 //   We've received a unit, whose text is |unit|. |isFinal| is a true value
 //   if we know for sure this is the last unit we'll receive on the
@@ -98,22 +61,60 @@ function handlerForGlobal(global) {
 // - onUnitsClosed(status)
 //   The stream has been closed, with nsresult status |status|.
 //
-// Constructor parameters:
+// The Framer instance itself has the methods needed to be a
+// LaproscopeServer.Connection listener: onInput and onClosed. It provides
+// the following methods for writing different items:
 //
-// @param aOnUnit function
-// @param aOnUnitsClosed function
-//    Initial values for onUnit and onUnitsClosed.
-
-//    Called when the stream is closed, after all text has been passed to aOnUnit.
-function UnitParser(aOnUnit, aOnUnitsClosed) {
-  this.onUnit = aOnUnit;
-  this.onUnitsClosed = aOnUnitsClosed;
+// - writeValue(text)
+// - writeText(text)
+// - writeErrorMessage(text)
+// - writeStackTrace(text)
+// - writePrompt()
+//
+// Framer constructor parameters:
+//
+// @param aConnection
+//    A LaproscopeServer.Connection instance to use for output.
+function Framer(aConnection) {
+  this.connection = aConnection;
   this.buffer = '';
   this.unit = '';
+  this.listener = null;
 }
 
-UnitParser.prototype = {
-  constructor: UnitParser,
+Framer.makeWriter = function(aPrefix) {
+  return function (text) {
+    let lines = text.split('\n');
+
+    // If text was properly terminated by a newline, drop the final empty
+    // string. Otherwise, treat the final non-newline-terminated fragment
+    // as if it were a full line, simply by leaving it in the array.
+    if (lines.length > 0 && lines[lines.length-1] == '') {
+      lines.length--;
+    }
+
+    let i = 0;
+    while (i < lines.length - 1) {
+      this.connection.write(aPrefix + '-' + lines[i++] + '\n');
+    }
+    if (i < lines.length) {
+      this.connection.write(aPrefix + ' ' + lines[i] + '\n');
+    }
+  }
+};
+
+Framer.prototype = {
+  constructor: Framer,
+
+  writeValue:           Framer.makeWriter('='),
+  writeText:            Framer.makeWriter(' '),
+  writeErrorMessage:    Framer.makeWriter('!'),
+  writeStackTrace:      Framer.makeWriter('.'),
+
+  writePrompt: function () {
+    this.connection.write('l> ');
+  },
+
   onInput: function(string) {
     this.buffer += string;
     let end;
@@ -125,26 +126,100 @@ UnitParser.prototype = {
         break;
 
         case '\\.':
-        this.onUnit(this.unit + line.substr(2));
+        this.listener.onUnit(this.unit + line.substr(2));
         this.unit = '';
         break;
 
         default:
-        this.onUnit(this.unit + line);
+        this.listener.onUnit(this.unit + line);
         this.unit = '';
         break;
       }
       this.buffer = this.buffer.substr(end + 1);
     }
   },
+
   onClosed: function(status) {
     if (this.unit || this.buffer) {
-      this.onUnit(this.unit + this.buffer, true);
+      this.listener.onUnit(this.unit + this.buffer, true);
     }
     this.unit = '';
     this.buffer = '';
-    this.onUnitsClosed(status);
+    this.listener.onUnitsClosed(status);
+    this.connection.close();
   }
 };
+
+// A Repl instance acts as a Framer listener, and runs a
+// read-eval-print loop, using the Framer for output.
+//
+// @param aGlobal object
+//    The global object in which this Repl should evaluate code.
+//
+// @param aFramer
+//    A Framer instance to use for output.
+function Repl(aGlobal, aFramer) {
+  this.global = aGlobal;
+  this.parser = aFramer;
+
+  /* Utility object for the global. */
+  this.lap = {
+    write: (text) => { return this.parser.writeText(text); }
+  };
+
+  this.parser.writeText('surely there are better alternatives\n');
+  this.parser.writePrompt();
+}
+
+Repl.prototype = {
+  constructor: Repl,
+
+  onUnit: function(unit, isFinal) {
+    this._evalAndPrint(unit);
+    if (!isFinal) {
+      this.parser.writePrompt();
+    }
+  },
+
+  onUnitsClosed: function(status) { },
+
+  _evalAndPrint: function(code) {
+    try {
+      /* Reassign, in case other ReplS have set theirs. */
+      this.global.lap = this.lap;
+
+      let value = this.global.eval(code);
+      /*
+       * Print the value helpfully. Don't print 'undefined' values;
+       * show source form of everything; show string for objects (so
+       * we can see their class, usually).
+       */
+      if (value !== undefined) {
+        let ue = uneval(value);
+        /* Prefer toString to certain less-helpful results from uneval. */
+        if (ue === '({})' || ue.indexOf('\n') != -1) {
+          this.parser.writeValue("(toString) " + value.toString() + "\n");
+        } else {
+          this.parser.writeValue(ue + "\n");
+        }
+      }
+    } catch (x) {
+      this.parser.writeErrorMessage('Exception: ' + x + '\n');
+      if (x.stack) {
+        this.parser.writeStackTrace('Stack:\n' + x.stack);
+      }
+    }
+  }
+};
+
+function handlerForGlobal(aGlobal) {
+  return function(aConnection) {
+    let up = new Framer(aConnection);
+    aConnection.listener = up;
+
+    let repl = new Repl(aGlobal, up);
+    up.listener = repl;
+  }
+}
 
 var REPL = { handlerForGlobal: handlerForGlobal };
