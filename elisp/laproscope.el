@@ -62,13 +62,16 @@
                   '(laproscope-prompt-count 0))))
     (save-excursion
       (goto-char start)
-      (while (< (point) end)
-        (let ((line-start (point)))
-          (forward-line 1)
-          (process-send-string stream (if (< (point) end) "\\ " "\\."))
-          (process-send-region stream line-start (min end (point)))))
-      (if (> (point) end)
-          (process-send-string stream "\n")))))
+      (while
+          (progn
+            (let ((line-start (point)))
+              (forward-line 1)
+              (process-send-string stream (if (< (point) end) "\\ " "\\."))
+              (process-send-region stream line-start (min end (point))))
+            (< (point) end)))
+      ;; Depending on the region, we may need to send a final newline.
+      (unless (and (< start end) (= (char-after (1- end)) ?\n))
+        (process-send-string stream "\n")))))
 
 (defun laproscope-send-region-on-prompt ()
   (when (= 2 (incf laproscope-prompt-count))

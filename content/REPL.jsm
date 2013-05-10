@@ -1,5 +1,7 @@
 var EXPORTED_SYMBOLS = ['REPL'];
 
+Components.utils.import('chrome://laproscope/content/LaproscopeLog.jsm');
+
 // A Framer instance functions as a LaproscopeServer.Connection
 // listener, parses the stream into units of text to be evaluated
 // ("compilation units", hence the name), and passes them to its own
@@ -116,6 +118,8 @@ Framer.prototype = {
   },
 
   onInput: function(string) {
+    // LaproscopeLog("Framer.prototype.onInput: ", uneval(string));
+
     this.buffer += string;
     let end;
     while ((end = this.buffer.indexOf('\n')) > 0) {
@@ -164,7 +168,8 @@ function Repl(aGlobal, aFramer) {
 
   /* Utility object for the global. */
   this.lap = {
-    write: (text) => { return this.parser.writeText(text); }
+    write: (text) => { return this.parser.writeText(text); },
+    log: LaproscopeLog
   };
 
   this.parser.writeText('surely there are better alternatives\n');
