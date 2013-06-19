@@ -11,7 +11,7 @@ var Laproscope = Laproscope || {};
    Laproscope.BrowserOverlay = {
      enable: function(aEvent) {
        let value = aEvent.target.hasAttribute('checked');
-       LaproscopeLog("Yo! Laproscope.BrowserOverlay.enable: " + uneval(value));
+       LaproscopeLog("BrowserOverlay", "Laproscope.BrowserOverlay.enable: " + uneval(value));
        server.enabled = value;
      }
    };

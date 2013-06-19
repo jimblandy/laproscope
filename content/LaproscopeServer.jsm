@@ -66,12 +66,12 @@ function Connection(aTransport) {
   // Establish a default listener.
   this.listener = {
     onInput: (aInput) => {
-      LaproscopeLog("LaproscopeServer.Listener.Connection received: " + uneval(aInput));
-      LaproscopeLog("(listener not set)");
+      LaproscopeLog("Connection", "LaproscopeServer.Listener.Connection received: " + uneval(aInput));
+      LaproscopeLog("Connection", "(listener not set)");
     },
 
     onClosed: (aStatus) => {
-      LaproscopeLog("LaproscopeServer.Listener.Connection closed: " + uneval(aStatus));
+      LaproscopeLog("Connection", "LaproscopeServer.Listener.Connection closed: " + uneval(aStatus));
       this.close();
     }
   };
@@ -153,7 +153,6 @@ Connection.prototype = {
  */
 function Listener(aPort, aLocalOnly, aHandler) {
   this._newSocket = function() {
-    LaproscopeLog("ServerSocket = " + uneval(ServerSocket));
     return new ServerSocket(aPort, aLocalOnly, 4);
   };
   this._handler = aHandler;
@@ -181,13 +180,13 @@ Listener.prototype = {
   },
 
   onSocketAccepted: function (aServ, aTransport) {
-    LaproscopeLog("LaproscopeServer.Listener: accepted connection: "
-         + aTransport.host + ":" + aTransport.port);
+    LaproscopeLog("Listener", "LaproscopeServer.Listener: accepted connection: "
+                  + aTransport.host + ":" + aTransport.port);
     this._handler(new Connection(aTransport));
   },
 
   onStopListening: function (aServ, aStatus) {
-    LaproscopeLog("LaproscopeServer.Listener: stop listening: " + aStatus);
+    LaproscopeLog("Listener", "LaproscopeServer.Listener: stop listening: " + aStatus);
   }
 };
 

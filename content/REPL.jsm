@@ -118,7 +118,7 @@ Framer.prototype = {
   },
 
   onInput: function(string) {
-    // LaproscopeLog("Framer.prototype.onInput: ", uneval(string));
+    LaproscopeLog("Framer", "Framer.prototype.onInput: ", uneval(string));
 
     this.buffer += string;
     let end;
@@ -169,7 +169,7 @@ function Repl(aGlobal, aFramer) {
   /* Utility object for the global. */
   this.lap = {
     write: (text) => { return this.parser.writeText(text); },
-    log: LaproscopeLog
+    log: (text) => LaproscopeLog(true, text)
   };
 
   this.parser.writeText('surely there are better alternatives\n');
