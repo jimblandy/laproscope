@@ -40,6 +40,8 @@ clean:
 # The sources for the XPI file.
 xpi_built := install.rdf \
              chrome.manifest \
+             bootstrap.js \
+             options.xul \
              $(wildcard content/*.js) \
              $(wildcard content/*.jsm) \
              $(wildcard content/*.xul) \
