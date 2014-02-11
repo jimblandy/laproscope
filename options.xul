@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE vbox [
+    <!ENTITY branch "extensions.laproscope.">
+]>
+
+<vbox xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+    <setting type="integer" pref="&branch;port" title="Port" desc="Change port on which Laproscope listens for connections. Takes effect only for new windows and after an extension restart." />
+</vbox>
+
+<!-- vim:se sts=4 sw=4 et ft=xml -->

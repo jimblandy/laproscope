@@ -1,5 +1,3 @@
 content   laproscope                content/
 skin      laproscope  classic/1.0   skin/
 locale    laproscope  en-US         locale/en-US/
-
-overlay chrome://browser/content/browser.xul  chrome://laproscope/content/browserOverlay.xul
